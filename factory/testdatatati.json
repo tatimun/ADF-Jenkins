@@ -1,0 +1,9 @@
+{
+	"name": "testdatatati",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "4487baf4-402a-49a0-837e-6af44cd7be81",
+		"tenantId": "84f1e4ea-8554-43e1-8709-f0b8589ea118"
+	}
+}
