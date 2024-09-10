@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NODE_VERSION = '18.x'
-        REPO_PATH = "${env.WORKSPACE}/ADF" // Ajusta la carpeta según tu estructura
+        REPO_PATH = "${env.WORKSPACE}/build" // Apunta a la carpeta 'build' donde está el package.json
         SUBSCRIPTION_ID = "${env.SUBSCRIPTION_ID}"
         RESOURCE_GROUP = "${env.RESOURCE_GROUP}"
         DATA_FACTORY_NAME = "tatidatatest"
@@ -27,8 +27,8 @@ pipeline {
 
         stage('Install npm packages') {
             steps {
-                dir(REPO_PATH) {
-                    bat 'npm install' // Ejecuta npm install dentro del directorio
+                dir(REPO_PATH) { // Ahora apunta a la carpeta build
+                    bat 'npm install'
                 }
             }
         }
@@ -37,7 +37,7 @@ pipeline {
             steps {
                 dir(REPO_PATH) {
                     bat """
-                    npm run build validate ${env.REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME}
+                    npm run build validate ${REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME}
                     """
                 }
             }
@@ -47,7 +47,7 @@ pipeline {
             steps {
                 dir(REPO_PATH) {
                     bat """
-                    npm run build export ${env.REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME} "ArmTemplate"
+                    npm run build export ${REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME} "ArmTemplate"
                     """
                 }
             }
