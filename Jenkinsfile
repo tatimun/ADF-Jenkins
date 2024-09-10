@@ -39,7 +39,7 @@ pipeline {
             steps {
                 dir(REPO_PATH) {
                     sh """
-                    npm run build validate ${env.REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME}
+                    npm run build validate ${env.REPO_PATH}/build /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME}
                     """
                 }
             }
@@ -49,7 +49,7 @@ pipeline {
             steps {
                 dir(REPO_PATH) {
                     sh """
-                    npm run build export ${env.REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME} "ArmTemplate"
+                    npm run build export ${env.REPO_PATH}/build /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME} "ArmTemplate"
                     """
                 }
             }
