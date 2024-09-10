@@ -3,34 +3,32 @@ pipeline {
 
     environment {
         NODE_VERSION = '18.x'
-        REPO_PATH = "${env.WORKSPACE}/ADF" // Ajusta con la carpeta correcta dentro de tu repositorio
-        SUBSCRIPTION_ID = "${env.SUBSCRIPTION_ID}" // Define en Jenkins o en el entorno
-        RESOURCE_GROUP = "${env.RESOURCE_GROUP}" // Define en Jenkins o en el entorno
-        DATA_FACTORY_NAME = "tatidatatest" // El nombre de tu Data Factory
+        REPO_PATH = "${env.WORKSPACE}/ADF" // Ajusta la carpeta según tu estructura
+        SUBSCRIPTION_ID = "${env.SUBSCRIPTION_ID}"
+        RESOURCE_GROUP = "${env.RESOURCE_GROUP}"
+        DATA_FACTORY_NAME = "tatidatatest"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Clonar el repositorio
                 git url: 'https://github.com/tatimun/ADF-Jenkins', branch: 'main'
             }
         }
 
-        stage('Install Node.js') {
+        stage('Verify Node.js and npm installation') {
             steps {
-                sh """
-                # Instala Node.js
-                curl -sL https://deb.nodesource.com/setup_${NODE_VERSION} | bash -
-                apt-get install -y nodejs
+                bat """
+                node --version
+                npm --version
                 """
             }
         }
 
-        stage('Install npm package') {
+        stage('Install npm packages') {
             steps {
                 dir(REPO_PATH) {
-                    sh 'npm install' // Ejecuta npm install dentro del directorio
+                    bat 'npm install' // Ejecuta npm install dentro del directorio
                 }
             }
         }
@@ -38,8 +36,8 @@ pipeline {
         stage('Validate Data Factory resources') {
             steps {
                 dir(REPO_PATH) {
-                    sh """
-                    npm run build validate ${env.REPO_PATH}/build /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME}
+                    bat """
+                    npm run build validate ${env.REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME}
                     """
                 }
             }
@@ -48,8 +46,8 @@ pipeline {
         stage('Generate ARM Template') {
             steps {
                 dir(REPO_PATH) {
-                    sh """
-                    npm run build export ${env.REPO_PATH}/build /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME} "ArmTemplate"
+                    bat """
+                    npm run build export ${env.REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME} "ArmTemplate"
                     """
                 }
             }
