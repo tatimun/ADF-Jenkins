@@ -4,8 +4,8 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                // Clona el repositorio de tu código
-                git credentialsId: 'github-credentials', url: 'https://github.com/tatimun/ADF-Jenkins.git'
+                // Clona el repositorio desde la rama 'main'
+                git branch: 'main', credentialsId: 'github-credentials', url: 'https://github.com/tatimun/ADF-Jenkins.git'
             }
         }
 
@@ -32,9 +32,8 @@ pipeline {
 
         stage('Validate Data Factory') {
             steps {
-                // Usamos la credencial de Azure Service Principal
+                // Autenticamos usando la credencial de Azure Service Principal
                 withAzureServicePrincipal(credentialsId: 'azure-service-principal') {
-                    // Validamos los recursos de Data Factory
                     sh '''
                     npm run build validate build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
                     '''
@@ -44,9 +43,8 @@ pipeline {
 
         stage('Generate ARM Template') {
             steps {
-                // Usamos la credencial de Azure Service Principal
+                // Autenticamos usando la credencial de Azure Service Principal
                 withAzureServicePrincipal(credentialsId: 'azure-service-principal') {
-                    // Generamos la plantilla ARM en el destino
                     sh '''
                     npm run build export build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
                     '''
@@ -81,7 +79,8 @@ pipeline {
 
     post {
         always {
-            sh 'az logout'
+            // Nos deslogueamos de Azure al final
+            sh 'az logout || echo "No active session to logout"'
         }
         failure {
             echo 'Pipeline failed.'
@@ -91,3 +90,4 @@ pipeline {
         }
     }
 }
+
