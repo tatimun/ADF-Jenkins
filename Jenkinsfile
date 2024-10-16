@@ -42,6 +42,15 @@ pipeline {
                 }
             }
         }
+        stage('Configure Git') {
+            steps {
+                // Configurar nombre y correo de Git dentro del pipeline
+                sh '''
+                    git config --global user.email "apuntatis@gmail.com"
+                    git config --global user.name "tatimun"
+                '''
+            }
+        }
         stage('Commit ARM Template') {
             steps {
                 // Hacer commit del ARM template exportado al repositorio
