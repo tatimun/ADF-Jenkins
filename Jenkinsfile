@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Agregamos el ID de suscripción y otros secretos como variables de entorno
-        AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
+        AZURE_SUBSCRIPTION_ID = 'c86828e7-97bf-4d44-8693-11edaef80c32'
         AZURE_TENANT_ID = credentials('azure-tenant-id')
         AZURE_CLIENT_ID = credentials('azure-client-id')
         AZURE_CLIENT_SECRET = credentials('azure-client-secret')
@@ -34,9 +34,7 @@ pipeline {
         stage('Install NPM Packages') {
             steps {
                 // Instalamos los paquetes de npm que estén en el package.json
-                sh '''
-                npm install --prefix <folder-of-the-package.json-file>
-                '''
+                sh 'npm install --prefix <folder-of-the-package.json-file>'
             }
         }
 
@@ -68,14 +66,16 @@ pipeline {
         stage('Commit and Push ARM Template') {
             steps {
                 script {
-                    // Configuramos las credenciales de Git para hacer el commit
-                    sh '''
-                    git config --global user.email "apuntatis@gmail.com"
-                    git config --global user.name "tatimun"
-                    git add <folder-of-the-package.json-file>/ArmTemplate/*
-                    git commit -m "Exported Data Factory ARM template"
-                    git push https://$GIT_USERNAME:$GIT_PASSWORD@github.com/tatimun/ADF-Jenkins.git main
-                    '''
+                    // Utilizamos credenciales de Git de forma segura
+                    withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                        sh '''
+                        git config --global user.email "apuntatis@gmail.com"
+                        git config --global user.name "tatimun"
+                        git add <folder-of-the-package.json-file>/ArmTemplate/*
+                        git commit -m "Exported Data Factory ARM template"
+                        git push https://$GIT_USERNAME:$GIT_PASSWORD@github.com/tatimun/ADF-Jenkins.git main
+                        '''
+                    }
                 }
             }
         }
@@ -94,3 +94,4 @@ pipeline {
         }
     }
 }
+
