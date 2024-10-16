@@ -81,7 +81,6 @@ pipeline {
                 }
             }
         }
-    }
 
         stage('Pre Deployment - Azure PowerShell') {
             steps {
@@ -107,6 +106,7 @@ pipeline {
             }
         }
     }
+
     post {
         always {
             script {
@@ -124,3 +124,4 @@ pipeline {
         }
     }
 }
+
