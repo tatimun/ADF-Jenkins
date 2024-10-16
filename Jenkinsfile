@@ -1,78 +1,97 @@
 pipeline {
     agent any
-    environment {
-        AZURE_CREDENTIALS_ID = 'azure-credentials'      // Credenciales de Azure
-        GIT_CREDENTIALS_ID = 'github-credentials'       // Credenciales de GitHub
-        RESOURCE_GROUP = 'testRG'                       // Nombre del resource group
-        DATA_FACTORY = 'tatidatatest'                   // Nombre de la Data Factory
-    }
-    stages {
-        stage('Checkout SCM') {
-            steps {
-                // Clonar el repositorio de GitHub
-                git url: 'https://github.com/tatimun/ADF-Jenkins.git', branch: 'main', credentialsId: "${GIT_CREDENTIALS_ID}"
-            }
-        }
-        stage('Login to Azure') {
-            steps {
-                withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
-                    sh 'az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID'
-                }
-            }
-        }
-        stage('Export ARM Template via REST API') {
-            steps {
-                // Obtener el token de acceso
-                script {
-                    withCredentials([string(credentialsId: 'azure-subscription-id', variable: 'SUBSCRIPTION_ID')]) {
-                        def accessToken = sh(
-                            script: 'az account get-access-token --query accessToken --output tsv',
-                            returnStdout: true
-                        ).trim()
 
-                        // Llamar a la API REST de Azure para exportar el template
-                        sh """
-                        curl -X POST \
-                        -H "Authorization: Bearer ${accessToken}" \
-                        -H "Content-Type: application/json" \
-                        https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY}/exportTemplate?api-version=2018-06-01 \
-                        -d '{}' -o ./arm-templates/datafactory-template.json
-                        """
-                    }
+    environment {
+        NODE_VERSION = '18.x'
+        AZURE_SUBSCRIPTION = 'subscrizzzzz
+        RESOURCE_GROUP = 'testRG'
+        DATAFACTORY_NAME = 'tatidatatest'
+        PACKAGE_FOLDER = 'package.json'
+        OUTPUT_FOLDER = 'ArmTemplate'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Node.js') {
+            steps {
+                script {
+                    // Instalar Node.js 18.x
+                    sh "curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+                    sh "sudo apt-get install -y nodejs"
                 }
             }
         }
-        stage('Configure Git') {
+
+        stage('Install NPM Packages') {
             steps {
-                // Configurar nombre y correo de Git dentro del pipeline
-                sh '''
+                // Instalar las dependencias desde el package.json
+                dir("${PACKAGE_FOLDER}") {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Validate Data Factory') {
+            steps {
+                // Validar los recursos de Data Factory
+                dir("${PACKAGE_FOLDER}") {
+                    sh "npm run build validate ${WORKSPACE}/${PACKAGE_FOLDER} /subscriptions/${AZURE_SUBSCRIPTION}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATAFACTORY_NAME}"
+                }
+            }
+        }
+
+        stage('Generate ARM Template') {
+            steps {
+                // Exportar la plantilla ARM
+                dir("${PACKAGE_FOLDER}") {
+                    sh "npm run build export ${WORKSPACE}/${PACKAGE_FOLDER} /subscriptions/${AZURE_SUBSCRIPTION}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATAFACTORY_NAME} '${OUTPUT_FOLDER}'"
+                }
+            }
+        }
+
+        stage('Publish Artifact') {
+            steps {
+                script {
+                    // Copiar la plantilla ARM generada a una carpeta del workspace
+                    sh "mkdir -p ${WORKSPACE}/arm-templates"
+                    sh "cp -r ${WORKSPACE}/${PACKAGE_FOLDER}/${OUTPUT_FOLDER}/* ${WORKSPACE}/arm-templates/"
+                }
+            }
+        }
+
+        stage('Commit and Push ARM Template') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                    // Agregar, commitear y hacer push del template ARM al repositorio
+                    sh '''
                     git config --global user.email "apuntatis@gmail.com"
                     git config --global user.name "tatimun"
-                '''
-            }
-        }
-        stage('Commit ARM Template') {
-            steps {
-                // Hacer commit del ARM template exportado al repositorio
-                sh '''
-                    git add ./arm-templates/datafactory-template.json
+                    git add ${WORKSPACE}/arm-templates/*
                     git commit -m "Exported Data Factory ARM template"
-                '''
-            }
-        }
-        stage('Push ARM Template to GitHub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS_ID}", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                    sh '''
-                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/tatimun/ADF-Jenkins.git main
+                    git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/tatimun/ADF-Jenkins.git main
                     '''
                 }
             }
         }
     }
+
     post {
         always {
-            sh 'az logout || true'
+            script {
+                // Limpiar recursos o cualquier acción post-pipeline
+                sh 'az logout'
+            }
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed.'
         }
     }
 }
