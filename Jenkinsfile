@@ -51,7 +51,7 @@ pipeline {
                         git add .
                         git commit -m "Updated ARM template for Data Factory"
                         git pull origin main --rebase
-                        git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/tatimun/ADF-Jenkins.git main
+                        git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/tatimun/ADF-Jenkins.git main --force-with-lease
                     '''
                 }
             }
