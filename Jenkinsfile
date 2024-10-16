@@ -34,7 +34,7 @@ pipeline {
         stage('Install NPM Packages') {
             steps {
                 // Instalamos los paquetes de npm que estén en el package.json
-                sh 'npm install --prefix <folder-of-the-package.json-file>'
+                sh 'npm install --prefix build'
             }
         }
 
@@ -42,7 +42,7 @@ pipeline {
             steps {
                 // Validamos los recursos de Data Factory
                 sh '''
-                npm run build validate <folder-of-the-package.json-file> /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/<Your-ResourceGroup-Name>/providers/Microsoft.DataFactory/factories/<Your-Factory-Name>
+                npm run build validate build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
                 '''
             }
         }
@@ -51,7 +51,7 @@ pipeline {
             steps {
                 // Generamos la plantilla ARM en el destino
                 sh '''
-                npm run build export <folder-of-the-package.json-file> /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/<Your-ResourceGroup-Name>/providers/Microsoft.DataFactory/factories/<Your-Factory-Name> "ArmTemplate"
+                npm run build export build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
                 '''
             }
         }
@@ -59,7 +59,7 @@ pipeline {
         stage('Publish Artifact') {
             steps {
                 // Publicamos el artefacto generado
-                archiveArtifacts artifacts: '<folder-of-the-package.json-file>/ArmTemplate/*', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'build/ArmTemplate/*', allowEmptyArchive: true
             }
         }
 
