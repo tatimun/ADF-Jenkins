@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NEXUS_CREDENTIALS_ID = 'nexus-credentials' // ID de las credenciales configuradas en Jenkins para Nexus
-        NEXUS_URL = 'http://localhost:8081' // Cambia por la URL de tu Nexus
+        NEXUS_URL = 'http://nexus:8081' // Cambia por la URL de tu Nexus
         NEXUS_REPOSITORY = 'arm-templates' // Nombre del repositorio Raw en Nexus
         ARTIFACT_VERSION = '1.0.0'
         ARTIFACT_ID = 'ArmTemplates'
@@ -73,7 +73,15 @@ pipeline {
 
     post {
         always {
-            sh 'az logout'
+            script {
+                // Verifica si hay cuentas activas de Azure antes de intentar desconectar
+                def result = sh(script: 'az account show', returnStatus: true)
+                if (result == 0) {
+                    sh 'az logout'
+                } else {
+                    echo 'No Azure accounts were logged in.'
+                }
+            }
         }
         failure {
             echo 'Pipeline failed.'
