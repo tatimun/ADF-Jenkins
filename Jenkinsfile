@@ -20,7 +20,7 @@ pipeline {
         stage('Validate Data Factory') {
             steps {
                 // Autenticamos usando la credencial de Azure Service Principal
-                withCredentials([azureServicePrincipal(credentialsId: 'azure-service-principal')]) {
+                withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
                     sh '''
                     npm run build validate build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
                     '''
@@ -31,7 +31,7 @@ pipeline {
         stage('Generate ARM Template') {
             steps {
                 // Autenticamos usando la credencial de Azure Service Principal
-                withCredentials([azureServicePrincipal(credentialsId: 'azure-service-principal')]) {
+                withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
                     sh '''
                     npm run build export build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
                     '''
