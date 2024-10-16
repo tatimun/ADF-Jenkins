@@ -2,14 +2,16 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_CREDENTIALS_ID = 'nexus-credentials' // ID de las credenciales configuradas
-        NEXUS_URL = 'http://localhost:8081' // Cambia esto por la URL de tu Nexus
-        NEXUS_REPOSITORY = 'azure-releases' // Cambia esto por el nombre de tu repositorio en Nexus
+        NEXUS_CREDENTIALS_ID = 'nexus-credentials' // ID de las credenciales configuradas en Jenkins para Nexus
+        NEXUS_URL = 'http://localhost:8081' // Cambia por la URL de tu Nexus
+        NEXUS_REPOSITORY = 'arm-templates' // Nombre del repositorio Raw en Nexus
         ARTIFACT_VERSION = '1.0.0'
         ARTIFACT_ID = 'ArmTemplates'
+        FILE_NAME = 'armtemplates.zip' // El nombre del archivo que vas a subir
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 checkout([
@@ -45,25 +47,26 @@ pipeline {
                     /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest \
                     ArmTemplate
                     '''
+
+                    // Crear el archivo ZIP para subirlo
+                    sh 'cd build/ArmTemplate && zip -r ${FILE_NAME} .'
                 }
             }
         }
 
         stage('Upload to Nexus') {
             steps {
-                nexusArtifactUploader artifacts: [[
-                    artifactId: "${ARTIFACT_ID}", 
-                    classifier: '', 
-                    file: 'build/ArmTemplate/ARMTemplateForFactory.json', 
-                    type: 'json'
-                ]], 
-                credentialsId: "${NEXUS_CREDENTIALS_ID}",
-                groupId: "${GROUP_ID}",
-                nexusUrl: "${NEXUS_URL}",
-                nexusVersion: 'nexus3',
-                protocol: 'http',
-                repository: "${NEXUS_REPOSITORY}",
-                version: "${ARTIFACT_VERSION}"
+                withCredentials([usernamePassword(
+                    credentialsId: env.NEXUS_CREDENTIALS_ID, 
+                    passwordVariable: 'NEXUS_PASSWORD', 
+                    usernameVariable: 'NEXUS_USERNAME')]) {
+                    
+                    sh """
+                    curl -v -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
+                    --upload-file build/ArmTemplate/${FILE_NAME} \
+                    ${NEXUS_URL}/repository/${NEXUS_REPOSITORY}/${ARTIFACT_ID}/${ARTIFACT_VERSION}/${FILE_NAME}
+                    """
+                }
             }
         }
     }
