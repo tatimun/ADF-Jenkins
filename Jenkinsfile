@@ -1,68 +1,40 @@
 pipeline {
     agent any
-
     environment {
-        NODE_VERSION = '18.x'
-        REPO_PATH = "${env.WORKSPACE}/build" // Apunta a la carpeta 'build' donde está el package.json
-        SUBSCRIPTION_ID = "${env.SUBSCRIPTION_ID}"
-        RESOURCE_GROUP = "${env.RESOURCE_GROUP}"
-        DATA_FACTORY_NAME = "tatidatatest"
+        AZURE_CREDENTIALS_ID = 'azure-credentials' // El ID de las credenciales de Azure que configuraste en Jenkins
     }
-
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                git url: 'https://github.com/tatimun/ADF-Jenkins', branch: 'main'
+                // Clonar el repositorio de GitHub
+                git url: 'https://github.com/tatimun/ADF-Jenkins.git', branch: 'main', credentialsId: 'github-credentials'
             }
         }
-
-        stage('Verify Node.js and npm installation') {
+        stage('Login to Azure') {
             steps {
-                bat """
-                node --version
-                npm --version
-                """
-            }
-        }
-
-        stage('Install npm packages') {
-            steps {
-                dir(REPO_PATH) { // Ahora apunta a la carpeta build
-                    bat 'npm install'
+                // Usar las credenciales del Service Principal para iniciar sesión en Azure
+                withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
+                    sh '''
+                        az login --service-principal \
+                            --username $AZURE_CLIENT_ID \
+                            --password $AZURE_CLIENT_SECRET \
+                            --tenant $AZURE_TENANT_ID
+                    '''
                 }
             }
         }
-
-        stage('Validate Data Factory resources') {
+        stage('List Azure Subscriptions') {
             steps {
-                dir(REPO_PATH) {
-                    bat """
-                    npm run build validate ${REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME}
-                    """
-                }
-            }
-        }
-
-        stage('Generate ARM Template') {
-            steps {
-                dir(REPO_PATH) {
-                    bat """
-                    npm run build export ${REPO_PATH} /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY_NAME} "ArmTemplate"
-                    """
-                }
-            }
-        }
-
-        stage('Publish ARM Template Artifact') {
-            steps {
-                archiveArtifacts artifacts: 'ArmTemplate/**', fingerprint: true
+                // Listar las suscripciones de Azure
+                sh 'az account list --output table'
             }
         }
     }
-
     post {
         always {
-            cleanWs() // Limpia el workspace después de la ejecución
+            // Cerrar sesión de Azure después de ejecutar el pipeline
+            sh 'az logout'
         }
     }
 }
+
