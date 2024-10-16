@@ -2,11 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Agregamos el ID de suscripción y otros secretos como variables de entorno
-        AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
-        AZURE_TENANT_ID = credentials('azure-tenant-id')
-        AZURE_CLIENT_ID = credentials('azure-client-id')
-        AZURE_CLIENT_SECRET = credentials('azure-client-secret')
+        // Aquí no necesitamos definir las credenciales individualmente
     }
 
     stages {
@@ -40,19 +36,25 @@ pipeline {
 
         stage('Validate Data Factory') {
             steps {
-                // Validamos los recursos de Data Factory
-                sh '''
-                npm run build validate build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
-                '''
+                // Usamos la credencial de Azure Service Principal
+                withAzureServicePrincipal(credentialsId: 'azure-service-principal') {
+                    // Validamos los recursos de Data Factory
+                    sh '''
+                    npm run build validate build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
+                    '''
+                }
             }
         }
 
         stage('Generate ARM Template') {
             steps {
-                // Generamos la plantilla ARM en el destino
-                sh '''
-                npm run build export build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
-                '''
+                // Usamos la credencial de Azure Service Principal
+                withAzureServicePrincipal(credentialsId: 'azure-service-principal') {
+                    // Generamos la plantilla ARM en el destino
+                    sh '''
+                    npm run build export build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
+                    '''
+                }
             }
         }
 
@@ -80,5 +82,16 @@ pipeline {
             }
         }
     }
-}
 
+    post {
+        always {
+            sh 'az logout'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+    }
+}
