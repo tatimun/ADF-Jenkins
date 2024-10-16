@@ -39,16 +39,16 @@ pipeline {
 
         stage('Commit and Push ARM Template') {
             steps {
-                script {
+                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_TOKEN')]) {
                     // Agregar y hacer commit de los ARM templates generados
                     sh '''
-                    git config user.email "tu-email@example.com"
-                    git config user.name "Jenkins"
+                    git config user.email "apuntatis@gmail.com"
+                    git config user.name "tatimun"
                     git add .
                     git commit -m "Updated ARM template for Data Factory"
                     '''
 
-                    // Push de los cambios
+                    // Push de los cambios con credenciales
                     sh '''
                     git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/tatimun/ADF-Jenkins.git main
                     '''
@@ -66,4 +66,3 @@ pipeline {
         }
     }
 }
-
