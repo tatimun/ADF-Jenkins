@@ -57,8 +57,16 @@ pipeline {
                 sh '''
                     git add ./arm-templates/datafactory-template.json
                     git commit -m "Exported Data Factory ARM template"
-                    git push origin main
                 '''
+            }
+        }
+        stage('Push ARM Template to GitHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS_ID}", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                    sh '''
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/tatimun/ADF-Jenkins.git main
+                    '''
+                }
             }
         }
     }
