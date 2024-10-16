@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 checkout([
@@ -9,7 +10,7 @@ pipeline {
                     branches: [[name: 'main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/tatimun/ADF-Jenkins.git',
-                        credentialsId: 'github-credentials' // Usamos el ID que tienes configurado
+                        credentialsId: 'github-credentials'
                     ]]
                 ])
             }
@@ -24,8 +25,12 @@ pipeline {
         stage('Generate ARM Template') {
             steps {
                 withCredentials([azureServicePrincipal(
-                    credentialsId: 'azure-credentials' // Usamos el ID de credenciales de Azure
-                )]) {
+                    credentialsId: 'azure-credentials', 
+                    subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID', 
+                    tenantIdVariable: 'AZURE_TENANT_ID',
+                    clientIdVariable: 'AZURE_CLIENT_ID', 
+                    clientSecretVariable: 'AZURE_CLIENT_SECRET')]) {
+                    
                     // Generar el ARM template
                     sh '''
                     npm run --prefix build build export \
@@ -39,19 +44,14 @@ pipeline {
 
         stage('Commit and Push ARM Template') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_TOKEN')]) {
-                    // Agregar y hacer commit de los ARM templates generados
+                withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME')]) {
                     sh '''
-                    git config user.email "apuntatis@gmail.com"
-                    git config user.name "tatimun"
-                    git add .
-                    git commit -m "Updated ARM template for Data Factory"
-                    '''
-
-                    // Push de los cambios con credenciales
-                    sh '''
-                    git pull origin main --rebase
-                    git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/tatimun/ADF-Jenkins.git main
+                        git config user.email "apuntatis@gmail.com"
+                        git config user.name "tatimun"
+                        git add .
+                        git commit -m "Updated ARM template for Data Factory"
+                        git pull origin main --rebase
+                        git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/tatimun/ADF-Jenkins.git main
                     '''
                 }
             }
@@ -67,3 +67,4 @@ pipeline {
         }
     }
 }
+
