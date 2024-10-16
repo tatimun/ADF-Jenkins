@@ -8,7 +8,7 @@ pipeline {
         stage('Checkout SCM') {
             steps {
                 // Clonar el repositorio de GitHub
-                git url: 'https://github.com/your-username/your-repo.git', branch: 'main', credentialsId: "${GIT_CREDENTIALS_ID}"
+                git url: 'https://github.com/tatimun/ADF-Jenkins.git', branch: 'main', credentialsId: "${GIT_CREDENTIALS_ID}"
             }
         }
         stage('Login to Azure') {
