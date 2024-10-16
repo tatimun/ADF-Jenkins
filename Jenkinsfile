@@ -3,6 +3,8 @@ pipeline {
     environment {
         AZURE_CREDENTIALS_ID = 'azure-credentials' // Credenciales de Azure
         GIT_CREDENTIALS_ID = 'github-credentials'  // Credenciales de GitHub
+        RESOURCE_GROUP = 'testRG'                  // Nombre del resource group
+        DATA_FACTORY = 'tatidatatest'              // Nombre de la Data Factory
     }
     stages {
         stage('Checkout SCM') {
@@ -18,19 +20,14 @@ pipeline {
                 }
             }
         }
-        stage('Install Azure Data Factory Extension') {
-            steps {
-                // Instalar la extensión de Azure Data Factory
-                sh 'az extension add --name datafactory'
-            }
-        }
         stage('Export ARM Template') {
             steps {
                 // Exportar el ARM template de Data Factory
                 sh '''
-                    az datafactory export-arm-template --resource-group testRG \
-                        --factory-name tatidatatest \
-                        --output-path ./arm-templates/datafactory-template.json
+                    az resource export --resource-group $RESOURCE_GROUP \
+                        --name $DATA_FACTORY \
+                        --resource-type Microsoft.DataFactory/factories \
+                        --output json --include-parameter-default-value true --include-comments true --query-template > ./arm-templates/datafactory-template.json
                 '''
             }
         }
@@ -47,7 +44,7 @@ pipeline {
     }
     post {
         always {
-            sh 'az logout'
+            sh 'az logout || true'
         }
     }
 }
