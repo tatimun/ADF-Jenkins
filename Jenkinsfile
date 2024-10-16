@@ -5,13 +5,12 @@ pipeline {
         NEXUS_CREDENTIALS_ID = 'nexus-credentials' // ID de las credenciales configuradas en Jenkins para Nexus
         NEXUS_URL = 'http://nexus:8081' // Cambia por la URL de tu Nexus
         NEXUS_REPOSITORY = 'arm-templates' // Nombre del repositorio Raw en Nexus
-        ARTIFACT_VERSION = '1.0.0'
         ARTIFACT_ID = 'ArmTemplates'
         FILE_NAME = 'armtemplates.zip' // El nombre del archivo que vas a subir
+        BASE_VERSION = '1.0' // Base de la versión (ej. 1.0)
     }
 
     stages {
-
         stage('Checkout Code') {
             steps {
                 checkout([
@@ -34,12 +33,12 @@ pipeline {
         stage('Generate ARM Template') {
             steps {
                 withCredentials([azureServicePrincipal(
-                    credentialsId: 'azure-credentials', 
-                    subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID', 
+                    credentialsId: 'azure-credentials',
+                    subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID',
                     tenantIdVariable: 'AZURE_TENANT_ID',
-                    clientIdVariable: 'AZURE_CLIENT_ID', 
+                    clientIdVariable: 'AZURE_CLIENT_ID',
                     clientSecretVariable: 'AZURE_CLIENT_SECRET')]) {
-                    
+
                     // Generar el ARM template
                     sh '''
                     npm run --prefix build build export \
@@ -54,13 +53,26 @@ pipeline {
             }
         }
 
+        stage('Increment Version') {
+            steps {
+                script {
+                    // Obtener el número de build actual como parte del incremento
+                    def buildNumber = currentBuild.number
+
+                    // Actualizar el ARTIFACT_VERSION usando el número de build
+                    env.ARTIFACT_VERSION = "${BASE_VERSION}.${buildNumber}"
+                    echo "New artifact version: ${ARTIFACT_VERSION}"
+                }
+            }
+        }
+
         stage('Upload to Nexus') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: env.NEXUS_CREDENTIALS_ID, 
-                    passwordVariable: 'NEXUS_PASSWORD', 
+                    credentialsId: env.NEXUS_CREDENTIALS_ID,
+                    passwordVariable: 'NEXUS_PASSWORD',
                     usernameVariable: 'NEXUS_USERNAME')]) {
-                    
+
                     sh """
                     curl -v -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
                     --upload-file build/ArmTemplate/${FILE_NAME} \
