@@ -1,7 +1,6 @@
 pipeline {
     agent any
 
-
     stages {
         stage('Checkout Code') {
             steps {
@@ -22,7 +21,7 @@ pipeline {
                 // Autenticamos usando la credencial de Azure Service Principal
                 withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
                     sh '''
-                    npm run --prefix build build validate /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
+                    npm run --prefix build build validate /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest/factoryId
                     '''
                 }
             }
@@ -33,7 +32,7 @@ pipeline {
                 // Autenticamos usando la credencial de Azure Service Principal
                 withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
                     sh '''
-                    npm run --prefix build build export /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
+                    npm run --prefix build build export /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest/factoryId "ArmTemplate"
                     '''
                 }
             }
