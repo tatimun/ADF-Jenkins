@@ -2,65 +2,61 @@ pipeline {
     agent any
 
     stages {
+
         stage('Checkout Code') {
             steps {
-                // Clona el repositorio desde GitHub
-                git branch: 'main', credentialsId: 'GITHUB_CREDENTIALS', url: 'https://github.com/tatimun/ADF-Jenkins.git'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/tatimun/ADF-Jenkins.git',
+                        credentialsId: GIT_CREDENTIALS
+                    ]]
+                ])
             }
         }
 
         stage('Install NPM Packages') {
             steps {
-                // Instalamos las dependencias de npm
                 sh 'npm install --prefix build'
             }
         }
 
-        stage('Validate Data Factory') {
+        stage('Generate ARM Template') {
             steps {
-                // Validamos la infraestructura de Data Factory
-                withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
+                withCredentials([azureServicePrincipal(
+                    credentialsId: 'azure-credentials', 
+                    subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID', 
+                    tenantIdVariable: 'AZURE_TENANT_ID',
+                    clientIdVariable: 'AZURE_CLIENT_ID', 
+                    clientSecretVariable: 'AZURE_CLIENT_SECRET')]) {
+                    
+                    // Generar el ARM template
                     sh '''
-                    npm run --prefix build build validate /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest --factoryId tatidatatest
+                    npm run --prefix build build export \
+                    /var/jenkins_home/workspace/Azure/DataFactory \
+                    /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest \
+                    ArmTemplate
                     '''
                 }
             }
         }
 
-        stage('Export ARM Template') {
-            steps {
-                // Exportamos la plantilla ARM de Data Factory
-                withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
-                    sh '''
-                    npm run --prefix build build export /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest --factoryId tatidatatest ArmTemplate
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Production') {
-            steps {
-                // Desplegamos la plantilla ARM exportada al entorno de producción
-                withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
-                    sh '''
-                    az group deployment create --resource-group prodRG --template-file build/ArmTemplate/ARMTemplate.json --parameters @build/ArmTemplate/parameters.json
-                    '''
-                }
-            }
-        }
-
-        stage('Commit and Push Changes to GitHub') {
+        stage('Commit and Push ARM Template') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                        sh '''
-                        git config --global user.email "apuntatis@gmail.com"
-                        git config --global user.name "tatimun"
-                        git add build/ArmTemplate/*
-                        git commit -m "Updated ARM template for Data Factory"
-                        git push https://$GIT_USERNAME:$GIT_PASSWORD@github.com/tatimun/ADF-Jenkins.git main
-                        '''
-                    }
+                    // Agregar y hacer commit de los ARM templates generados
+                    sh '''
+                    git config user.email "your-email@example.com"
+                    git config user.name "Jenkins"
+                    git add .
+                    git commit -m "Updated ARM template for Data Factory"
+                    '''
+
+                    // Push de los cambios
+                    sh '''
+                    git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/tatimun/ADF-Jenkins.git main
+                    '''
                 }
             }
         }
@@ -68,14 +64,11 @@ pipeline {
 
     post {
         always {
-            // Cierra sesión de Azure al final
-            sh 'az logout || echo "No active session to logout"'
+            sh 'az logout'
         }
         failure {
             echo 'Pipeline failed.'
         }
-        success {
-            echo 'Pipeline completed successfully.'
-        }
     }
 }
+
