@@ -2,78 +2,79 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '18.x'
-        RESOURCE_GROUP = '<Tu-ResourceGroup-Name>'
-        DATAFACTORY_NAME = '<Tu-DataFactory-Name>'
-        PACKAGE_FOLDER = 'ruta/del/package.json'
-        OUTPUT_FOLDER = 'ArmTemplate'
+        // Agregamos el ID de suscripción y otros secretos como variables de entorno
+        AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
+        AZURE_TENANT_ID = credentials('azure-tenant-id')
+        AZURE_CLIENT_ID = credentials('azure-client-id')
+        AZURE_CLIENT_SECRET = credentials('azure-client-secret')
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                checkout scm
+                // Clona el repositorio de tu código
+                git credentialsId: 'github-credentials', url: 'https://github.com/tatimun/ADF-Jenkins.git'
             }
         }
 
         stage('Install Node.js') {
             steps {
                 script {
-                    // Instalar Node.js sin sudo
-                    sh "curl -sL https://deb.nodesource.com/setup_18.x | bash -"
-                    sh "apt-get install -y nodejs"
+                    // Instalamos Node.js si no está presente
+                    sh '''
+                    if ! command -v node &> /dev/null; then
+                        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+                        apt-get install -y nodejs
+                    fi
+                    '''
                 }
             }
         }
 
         stage('Install NPM Packages') {
             steps {
-                // Instalar las dependencias desde el package.json
-                dir("${PACKAGE_FOLDER}") {
-                    sh 'npm install'
-                }
+                // Instalamos los paquetes de npm que estén en el package.json
+                sh '''
+                npm install --prefix <folder-of-the-package.json-file>
+                '''
             }
         }
 
         stage('Validate Data Factory') {
             steps {
-                // Validar los recursos de Data Factory
-                dir("${PACKAGE_FOLDER}") {
-                    sh "npm run build validate ${WORKSPACE}/${PACKAGE_FOLDER} /subscriptions/${AZURE_SUBSCRIPTION}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATAFACTORY_NAME}"
-                }
+                // Validamos los recursos de Data Factory
+                sh '''
+                npm run build validate <folder-of-the-package.json-file> /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/<Your-ResourceGroup-Name>/providers/Microsoft.DataFactory/factories/<Your-Factory-Name>
+                '''
             }
         }
 
         stage('Generate ARM Template') {
             steps {
-                // Exportar la plantilla ARM
-                dir("${PACKAGE_FOLDER}") {
-                    sh "npm run build export ${WORKSPACE}/${PACKAGE_FOLDER} /subscriptions/${AZURE_SUBSCRIPTION}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATAFACTORY_NAME} '${OUTPUT_FOLDER}'"
-                }
+                // Generamos la plantilla ARM en el destino
+                sh '''
+                npm run build export <folder-of-the-package.json-file> /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/<Your-ResourceGroup-Name>/providers/Microsoft.DataFactory/factories/<Your-Factory-Name> "ArmTemplate"
+                '''
             }
         }
 
         stage('Publish Artifact') {
             steps {
-                script {
-                    // Copiar la plantilla ARM generada a una carpeta del workspace
-                    sh "mkdir -p ${WORKSPACE}/arm-templates"
-                    sh "cp -r ${WORKSPACE}/${PACKAGE_FOLDER}/${OUTPUT_FOLDER}/* ${WORKSPACE}/arm-templates/"
-                }
+                // Publicamos el artefacto generado
+                archiveArtifacts artifacts: '<folder-of-the-package.json-file>/ArmTemplate/*', allowEmptyArchive: true
             }
         }
 
         stage('Commit and Push ARM Template') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD'),
-                                 string(credentialsId: 'azure-subscription-id', variable: 'AZURE_SUBSCRIPTION')]) {
-                    // Agregar, commitear y hacer push del template ARM al repositorio
+                script {
+                    // Configuramos las credenciales de Git para hacer el commit
                     sh '''
                     git config --global user.email "apuntatis@gmail.com"
                     git config --global user.name "tatimun"
-                    git add ${WORKSPACE}/arm-templates/*
+                    git add <folder-of-the-package.json-file>/ArmTemplate/*
                     git commit -m "Exported Data Factory ARM template"
-                    git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/tatimun/ADF-Jenkins.git main
+                    git push https://$GIT_USERNAME:$GIT_PASSWORD@github.com/tatimun/ADF-Jenkins.git main
                     '''
                 }
             }
@@ -82,16 +83,14 @@ pipeline {
 
     post {
         always {
-            script {
-                // Limpiar recursos o cualquier acción post-pipeline
-                sh 'az logout'
-            }
-        }
-        success {
-            echo 'Pipeline completed successfully!'
+            // Nos deslogueamos de Azure siempre al final
+            sh 'az logout'
         }
         failure {
             echo 'Pipeline failed.'
+        }
+        success {
+            echo 'Pipeline completed successfully.'
         }
     }
 }
