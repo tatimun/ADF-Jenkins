@@ -18,6 +18,12 @@ pipeline {
                 }
             }
         }
+        stage('Install Azure Data Factory Extension') {
+            steps {
+                // Instalar la extensión de Azure Data Factory
+                sh 'az extension add --name datafactory'
+            }
+        }
         stage('Export ARM Template') {
             steps {
                 // Exportar el ARM template de Data Factory
