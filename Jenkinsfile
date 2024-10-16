@@ -22,8 +22,8 @@ pipeline {
             steps {
                 // Exportar el ARM template de Data Factory
                 sh '''
-                    az datafactory export-arm-template --resource-group <resource-group-name> \
-                        --factory-name <data-factory-name> \
+                    az datafactory export-arm-template --resource-group testRG \
+                        --factory-name tatidatatest \
                         --output-path ./arm-templates/datafactory-template.json
                 '''
             }
