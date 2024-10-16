@@ -50,6 +50,7 @@ pipeline {
 
                     // Push de los cambios con credenciales
                     sh '''
+                    git pull origin main --rebase
                     git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/tatimun/ADF-Jenkins.git main
                     '''
                 }
