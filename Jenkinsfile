@@ -95,10 +95,10 @@ pipeline {
                     sh '''
                     az account set --subscription $AZURE_SUBSCRIPTION_ID
 
-                    pwsh -File $(System.DefaultWorkingDirectory)/_TestDataFactory/Job/PrePostDeploymentScript.ps1 `
-                        -armTemplate "$(System.DefaultWorkingDirectory)/_TestDataFactory/Job/ARMTemplateForFactory.json" `
+                    pwsh -File ./build/Job/PrePostDeploymentScript.ps1 `
+                        -armTemplate "./build/Job/ARMTemplateForFactory.json" `
                         -ResourceGroupName 'TestRG' `
-                        -DataFactoryName 'testtutorialtati' `
+                        -DataFactoryName 'tatidatatest' `
                         -predeployment $true `
                         -deleteDeployment $false
                     '''
