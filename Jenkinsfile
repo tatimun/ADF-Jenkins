@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     stages {
-
         stage('Checkout Code') {
             steps {
                 checkout([
@@ -10,7 +9,7 @@ pipeline {
                     branches: [[name: 'main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/tatimun/ADF-Jenkins.git',
-                        credentialsId: github-credentials
+                        credentialsId: 'github-credentials' // Usamos el ID que tienes configurado
                     ]]
                 ])
             }
@@ -25,12 +24,8 @@ pipeline {
         stage('Generate ARM Template') {
             steps {
                 withCredentials([azureServicePrincipal(
-                    credentialsId: 'azure-credentials', 
-                    subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID', 
-                    tenantIdVariable: 'AZURE_TENANT_ID',
-                    clientIdVariable: 'AZURE_CLIENT_ID', 
-                    clientSecretVariable: 'AZURE_CLIENT_SECRET')]) {
-                    
+                    credentialsId: 'azure-credentials' // Usamos el ID de credenciales de Azure
+                )]) {
                     // Generar el ARM template
                     sh '''
                     npm run --prefix build build export \
@@ -47,7 +42,7 @@ pipeline {
                 script {
                     // Agregar y hacer commit de los ARM templates generados
                     sh '''
-                    git config user.email "your-email@example.com"
+                    git config user.email "tu-email@example.com"
                     git config user.name "Jenkins"
                     git add .
                     git commit -m "Updated ARM template for Data Factory"
