@@ -1,40 +1,47 @@
 pipeline {
     agent any
     environment {
-        AZURE_CREDENTIALS_ID = 'azure-credentials' // El ID de las credenciales de Azure que configuraste en Jenkins
+        AZURE_CREDENTIALS_ID = 'azure-credentials' // Credenciales de Azure
+        GIT_CREDENTIALS_ID = 'github-credentials'  // Credenciales de GitHub
     }
     stages {
         stage('Checkout SCM') {
             steps {
                 // Clonar el repositorio de GitHub
-                git url: 'https://github.com/tatimun/ADF-Jenkins.git', branch: 'main', credentialsId: 'github-credentials'
+                git url: 'https://github.com/your-username/your-repo.git', branch: 'main', credentialsId: "${GIT_CREDENTIALS_ID}"
             }
         }
         stage('Login to Azure') {
             steps {
-                // Usar las credenciales del Service Principal para iniciar sesión en Azure
                 withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
-                    sh '''
-                        az login --service-principal \
-                            --username $AZURE_CLIENT_ID \
-                            --password $AZURE_CLIENT_SECRET \
-                            --tenant $AZURE_TENANT_ID
-                    '''
+                    sh 'az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID'
                 }
             }
         }
-        stage('List Azure Subscriptions') {
+        stage('Export ARM Template') {
             steps {
-                // Listar las suscripciones de Azure
-                sh 'az account list --output table'
+                // Exportar el ARM template de Data Factory
+                sh '''
+                    az datafactory export-arm-template --resource-group <resource-group-name> \
+                        --factory-name <data-factory-name> \
+                        --output-path ./arm-templates/datafactory-template.json
+                '''
+            }
+        }
+        stage('Commit ARM Template') {
+            steps {
+                // Hacer commit del ARM template exportado al repositorio
+                sh '''
+                    git add ./arm-templates/datafactory-template.json
+                    git commit -m "Exported Data Factory ARM template"
+                    git push origin main
+                '''
             }
         }
     }
     post {
         always {
-            // Cerrar sesión de Azure después de ejecutar el pipeline
             sh 'az logout'
         }
     }
 }
-
