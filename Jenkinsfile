@@ -80,18 +80,5 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            // Nos deslogueamos de Azure siempre al final
-            sh 'az logout'
-        }
-        failure {
-            echo 'Pipeline failed.'
-        }
-        success {
-            echo 'Pipeline completed successfully.'
-        }
-    }
 }
 
