@@ -1,8 +1,15 @@
 pipeline {
     agent any
 
-    stages {
+    environment {
+        NEXUS_CREDENTIALS_ID = 'nexus-credentials' // ID de las credenciales configuradas
+        NEXUS_URL = 'http://localhost:8081' // Cambia esto por la URL de tu Nexus
+        NEXUS_REPOSITORY = 'azure-releases' // Cambia esto por el nombre de tu repositorio en Nexus
+        ARTIFACT_VERSION = '1.0.0'
+        ARTIFACT_ID = 'ArmTemplates'
+    }
 
+    stages {
         stage('Checkout Code') {
             steps {
                 checkout([
@@ -42,18 +49,21 @@ pipeline {
             }
         }
 
-        stage('Commit and Push ARM Template') {
+        stage('Upload to Nexus') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME')]) {
-                    sh '''
-                        git config user.email "apuntatis@gmail.com"
-                        git config user.name "tatimun"
-                        git add .
-                        git commit -m "Updated ARM template for Data Factory"
-                        git pull origin main --rebase
-                        git push https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/tatimun/ADF-Jenkins.git main --force-with-lease
-                    '''
-                }
+                nexusArtifactUploader artifacts: [[
+                    artifactId: "${ARTIFACT_ID}", 
+                    classifier: '', 
+                    file: 'build/ArmTemplate/ARMTemplateForFactory.json', 
+                    type: 'json'
+                ]], 
+                credentialsId: "${NEXUS_CREDENTIALS_ID}",
+                groupId: "${GROUP_ID}",
+                nexusUrl: "${NEXUS_URL}",
+                nexusVersion: 'nexus3',
+                protocol: 'http',
+                repository: "${NEXUS_REPOSITORY}",
+                version: "${ARTIFACT_VERSION}"
             }
         }
     }
@@ -67,4 +77,3 @@ pipeline {
         }
     }
 }
-
