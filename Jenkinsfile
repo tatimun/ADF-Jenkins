@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -12,7 +11,7 @@ pipeline {
 
         stage('Install NPM Packages') {
             steps {
-                // Instalamos los paquetes de npm que estén en el package.json
+                // Instalamos los paquetes de npm que estén en el package.json en la carpeta build
                 sh 'npm install --prefix build'
             }
         }
@@ -22,7 +21,7 @@ pipeline {
                 // Autenticamos usando la credencial de Azure Service Principal
                 withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
                     sh '''
-                    npm run build validate build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
+                    npm run --prefix build validate build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
                     '''
                 }
             }
@@ -33,7 +32,7 @@ pipeline {
                 // Autenticamos usando la credencial de Azure Service Principal
                 withCredentials([azureServicePrincipal(credentialsId: 'azure-credentials')]) {
                     sh '''
-                    npm run build export build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
+                    npm run --prefix build export build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
                     '''
                 }
             }
