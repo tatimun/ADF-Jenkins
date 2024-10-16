@@ -10,7 +10,7 @@ pipeline {
                     branches: [[name: 'main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/tatimun/ADF-Jenkins.git',
-                        credentialsId: GIT_CREDENTIALS
+                        credentialsId: github-credentials
                     ]]
                 ])
             }
