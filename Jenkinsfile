@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        // Aquí no necesitamos definir las credenciales individualmente
-    }
-
     stages {
         stage('Checkout Code') {
             steps {
