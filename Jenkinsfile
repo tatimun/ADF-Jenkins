@@ -3,9 +3,9 @@ pipeline {
 
     environment {
         NODE_VERSION = '18.x'
-        RESOURCE_GROUP = 'testRG'
-        DATAFACTORY_NAME = 'tatidatatest'
-        PACKAGE_FOLDER = 'package.json'
+        RESOURCE_GROUP = '<Tu-ResourceGroup-Name>'
+        DATAFACTORY_NAME = '<Tu-DataFactory-Name>'
+        PACKAGE_FOLDER = 'ruta/del/package.json'
         OUTPUT_FOLDER = 'ArmTemplate'
     }
 
@@ -19,9 +19,9 @@ pipeline {
         stage('Install Node.js') {
             steps {
                 script {
-                    // Instalar Node.js 18.x
-                    sh "curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
-                    sh "sudo apt-get install -y nodejs"
+                    // Instalar Node.js sin sudo
+                    sh "curl -sL https://deb.nodesource.com/setup_18.x | bash -"
+                    sh "apt-get install -y nodejs"
                 }
             }
         }
@@ -65,7 +65,8 @@ pipeline {
 
         stage('Commit and Push ARM Template') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD'),
+                                 string(credentialsId: 'azure-subscription-id', variable: 'AZURE_SUBSCRIPTION')]) {
                     // Agregar, commitear y hacer push del template ARM al repositorio
                     sh '''
                     git config --global user.email "apuntatis@gmail.com"
