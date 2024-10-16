@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Agregamos el ID de suscripción y otros secretos como variables de entorno
-        AZURE_SUBSCRIPTION_ID = 'c86828e7-97bf-4d44-8693-11edaef80c32'
+        AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
         AZURE_TENANT_ID = credentials('azure-tenant-id')
         AZURE_CLIENT_ID = credentials('azure-client-id')
         AZURE_CLIENT_SECRET = credentials('azure-client-secret')
@@ -83,8 +83,10 @@ pipeline {
 
     post {
         always {
-            // Nos deslogueamos de Azure siempre al final
-            sh 'az logout'
+            node {
+                // Nos deslogueamos de Azure siempre al final
+                sh 'az logout'
+            }
         }
         failure {
             echo 'Pipeline failed.'
