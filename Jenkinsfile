@@ -71,7 +71,7 @@ pipeline {
                         sh '''
                         git config --global user.email "apuntatis@gmail.com"
                         git config --global user.name "tatimun"
-                        git add <folder-of-the-package.json-file>/ArmTemplate/*
+                        git add build/ArmTemplate/*
                         git commit -m "Exported Data Factory ARM template"
                         git push https://$GIT_USERNAME:$GIT_PASSWORD@github.com/tatimun/ADF-Jenkins.git main
                         '''
@@ -83,10 +83,8 @@ pipeline {
 
     post {
         always {
-            node {
-                // Nos deslogueamos de Azure siempre al final
-                sh 'az logout'
-            }
+            // Nos deslogueamos de Azure siempre al final
+            sh 'az logout'
         }
         failure {
             echo 'Pipeline failed.'
