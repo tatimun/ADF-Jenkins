@@ -3,8 +3,9 @@ pipeline {
     environment {
         AZURE_CREDENTIALS_ID = 'azure-credentials' // Credenciales de Azure
         GIT_CREDENTIALS_ID = 'github-credentials'  // Credenciales de GitHub
-        RESOURCE_GROUP = 'testRG'                  // Nombre del resource group
-        DATA_FACTORY = 'tatidatatest'              // Nombre de la Data Factory
+        RESOURCE_GROUP = 'testRG'                  // Reemplaza con el nombre real de tu resource group
+        DATA_FACTORY = 'tatidatatest'              // Reemplaza con el nombre real de tu Data Factory
+        SUBSCRIPTION_ID = '<tu-subscription-id>'   // Tu ID de suscripción de Azure
     }
     stages {
         stage('Checkout SCM') {
@@ -20,15 +21,24 @@ pipeline {
                 }
             }
         }
-        stage('Export ARM Template') {
+        stage('Export ARM Template via REST API') {
             steps {
-                // Exportar el ARM template de Data Factory
-                sh '''
-                    az resource export --resource-group $RESOURCE_GROUP \
-                        --name $DATA_FACTORY \
-                        --resource-type Microsoft.DataFactory/factories \
-                        --output json --include-parameter-default-value true --include-comments true --query-template > ./arm-templates/datafactory-template.json
-                '''
+                // Obtener el token de acceso
+                script {
+                    def accessToken = sh(
+                        script: 'az account get-access-token --query accessToken --output tsv',
+                        returnStdout: true
+                    ).trim()
+
+                    // Llamar a la API REST de Azure para exportar el template
+                    sh """
+                    curl -X POST \
+                    -H "Authorization: Bearer ${accessToken}" \
+                    -H "Content-Type: application/json" \
+                    https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.DataFactory/factories/${DATA_FACTORY}/exportTemplate?api-version=2018-06-01 \
+                    -d '{}' -o ./arm-templates/datafactory-template.json
+                    """
+                }
             }
         }
         stage('Commit ARM Template') {
