@@ -93,6 +93,7 @@ pipeline {
                 )]) {
                     // Comando PowerShell para ejecutar el script
                     sh '''
+                    az login --service-principal -u 'azure-credentials'
                     az account set --subscription $AZURE_SUBSCRIPTION_ID
 
                     pwsh -File ./build/Job/PrePostDeploymentScript.ps1 `
