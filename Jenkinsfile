@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         NODE_VERSION = '18.x'
-        AZURE_SUBSCRIPTION = 'subscrizzzzz
         RESOURCE_GROUP = 'testRG'
         DATAFACTORY_NAME = 'tatidatatest'
         PACKAGE_FOLDER = 'package.json'
