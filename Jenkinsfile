@@ -1,25 +1,12 @@
 pipeline {
     agent any
 
+
     stages {
         stage('Checkout Code') {
             steps {
                 // Clona el repositorio desde la rama 'main'
                 git branch: 'main', credentialsId: 'github-credentials', url: 'https://github.com/tatimun/ADF-Jenkins.git'
-            }
-        }
-
-        stage('Install Node.js') {
-            steps {
-                script {
-                    // Instalamos Node.js si no está presente
-                    sh '''
-                    if ! command -v node &> /dev/null; then
-                        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-                        apt-get install -y nodejs
-                    fi
-                    '''
-                }
             }
         }
 
@@ -33,7 +20,7 @@ pipeline {
         stage('Validate Data Factory') {
             steps {
                 // Autenticamos usando la credencial de Azure Service Principal
-                withAzureServicePrincipal(credentialsId: 'azure-service-principal') {
+                withCredentials([azureServicePrincipal(credentialsId: 'azure-service-principal')]) {
                     sh '''
                     npm run build validate build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
                     '''
@@ -44,7 +31,7 @@ pipeline {
         stage('Generate ARM Template') {
             steps {
                 // Autenticamos usando la credencial de Azure Service Principal
-                withAzureServicePrincipal(credentialsId: 'azure-service-principal') {
+                withCredentials([azureServicePrincipal(credentialsId: 'azure-service-principal')]) {
                     sh '''
                     npm run build export build /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest "ArmTemplate"
                     '''
