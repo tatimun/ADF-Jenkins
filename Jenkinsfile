@@ -78,6 +78,15 @@ pipeline {
                 }
             }
         }
+        stage('Print Artifact Version') {
+            steps {
+                script {
+                    echo "----------------------------------------------------"
+                    echo "The current artifact version is: ${ARTIFACT_VERSION}"
+                    echo "----------------------------------------------------"
+                }
+            }
+        }
 
         stage('Upload to Nexus') {
             steps {
