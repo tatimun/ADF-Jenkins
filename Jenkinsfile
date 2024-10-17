@@ -94,30 +94,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Pre Deployment - Azure PowerShell') {
-            steps {
-                withCredentials([azureServicePrincipal(
-                    credentialsId: 'azure-credentials', 
-                    subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID',
-                    tenantIdVariable: 'AZURE_TENANT_ID',
-                    clientIdVariable: 'AZURE_CLIENT_ID',
-                    clientSecretVariable: 'AZURE_CLIENT_SECRET'
-                )]) {
-                    sh '''
-                    az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
-                    az account set --subscription $AZURE_SUBSCRIPTION_ID
-
-                    pwsh -File ./build/Job/PrePostDeploymentScript.ps1 `
-                        -armTemplate "./build/Job/ARMTemplateForFactory.json" `
-                        -ResourceGroupName 'TestRG' `
-                        -DataFactoryName 'tatidatatest' `
-                        -predeployment $true `
-                        -deleteDeployment $false
-                    '''
-                }
-            }
-        }
     }
 
     post {
