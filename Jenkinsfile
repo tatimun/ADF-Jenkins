@@ -87,9 +87,7 @@ pipeline {
                     usernameVariable: 'NEXUS_USERNAME')]) {
 
                     sh """
-                    curl -v -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
-                    --upload-file build/ArmTemplate/${FILE_NAME} \
-                    ${NEXUS_URL}/repository/${NEXUS_REPOSITORY}/${ARTIFACT_ID}/${ARTIFACT_VERSION}/${FILE_NAME}
+                    curl -v -u $NEXUS_USERNAME:$NEXUS_PASSWORD --upload-file build/ArmTemplate/armtemplates.zip http://nexus:8081/repository/arm-templates/ArmTemplates/${ARTIFACT_VERSION}/armtemplates.zip
                     """
                 }
             }
