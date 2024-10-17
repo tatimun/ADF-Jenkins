@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NEXUS_CREDENTIALS_ID = 'nexus-credentials'
-        NEXUS_URL = 'http://localhost:8081'
+        NEXUS_URL = 'http://nexus:8081'  // Cambiado de localhost a nexus
         NEXUS_REPOSITORY = 'arm-templates'
         ARTIFACT_ID = 'ArmTemplates'
         FILE_NAME = 'armtemplates.zip'
@@ -89,7 +89,7 @@ pipeline {
                     sh """
                     curl -v -u \$NEXUS_USERNAME:\$NEXUS_PASSWORD \
                     --upload-file build/ArmTemplate/${FILE_NAME} \
-                    http://localhost:8081/repository/arm-templates/${ARTIFACT_ID}/${ARTIFACT_VERSION}/${FILE_NAME}
+                    ${NEXUS_URL}/repository/${NEXUS_REPOSITORY}/${ARTIFACT_ID}/${ARTIFACT_VERSION}/${FILE_NAME}
                     """
                 }
             }
