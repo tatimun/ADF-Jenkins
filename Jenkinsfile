@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NEXUS_CREDENTIALS_ID = 'nexus-credentials'
-        NEXUS_URL = 'http://nexus:8081'  // Cambiado de localhost a nexus
+        NEXUS_URL = 'http://nexus:8081'
         NEXUS_REPOSITORY = 'arm-templates'
         ARTIFACT_ID = 'ArmTemplates'
         FILE_NAME = 'armtemplates.zip'
@@ -78,7 +78,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Print Artifact Version') {
             steps {
                 script {
@@ -108,10 +108,7 @@ pipeline {
         stage('Run PowerShell Script') {
             steps {
                 powershell '''
-                # Cambia a la ruta donde está tu script
-                Set-Location -Path "build/"
-                # Ejecuta tu script .ps1
-                .\\PrePostDeploymentScript.ps1 -armTemplate "ARMTemplateForFactory.json" -ResourceGroupName "TestRG" -DataFactoryName "tatidatatest" -predeployment $true -deleteDeployment $false
+                .\\build\\PrePostDeploymentScript.ps1 -armTemplate "ARMTemplateForFactory.json" -ResourceGroupName "TestRG" -DataFactoryName "testtutorialtati" -predeployment $true -deleteDeployment $false
                 '''
             }
         }
