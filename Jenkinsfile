@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_CREDENTIALS_ID = 'nexus-credentials' // ID de las credenciales configuradas en Jenkins para Nexus
-        NEXUS_URL = 'http://nexus:8081' // Cambia por la URL de tu Nexus
-        NEXUS_REPOSITORY = 'arm-templates' // Nombre del repositorio Raw en Nexus
+        NEXUS_CREDENTIALS_ID = 'nexus-credentials'
+        NEXUS_URL = 'http://nexus:8081'
+        NEXUS_REPOSITORY = 'arm-templates'
         ARTIFACT_ID = 'ArmTemplates'
-        FILE_NAME = 'armtemplates.zip' // El nombre del archivo que vas a subir
-        BASE_VERSION = '1.0' // Base de la versión (ej. 1.0)
+        FILE_NAME = 'armtemplates.zip'
+        BASE_VERSION = '1.0'
     }
 
     stages {
@@ -30,10 +30,15 @@ pipeline {
             }
         }
 
+        stage('Debug: List Files') {
+            steps {
+                sh 'ls -R /var/jenkins_home/workspace/Azure/AzureDataFactory'
+            }
+        }
+
         stage('Validate ARM Template') {
             steps {
                 script {
-                    // Validar el ARM template
                     sh '''
                     node build/node_modules/@microsoft/azure-data-factory-utilities/lib/index validate \
                     /var/jenkins_home/workspace/Azure/AzureDataFactory \
@@ -52,7 +57,6 @@ pipeline {
                     clientIdVariable: 'AZURE_CLIENT_ID',
                     clientSecretVariable: 'AZURE_CLIENT_SECRET')]) {
 
-                    // Generar el ARM template
                     sh '''
                     npm run --prefix build build export \
                     /var/jenkins_home/workspace/Azure/AzureDataFactory \
@@ -60,7 +64,6 @@ pipeline {
                     ArmTemplate
                     '''
 
-                    // Crear el archivo ZIP para subirlo
                     sh 'cd build/ArmTemplate && zip -r ${FILE_NAME} .'
                 }
             }
@@ -69,10 +72,7 @@ pipeline {
         stage('Increment Version') {
             steps {
                 script {
-                    // Obtener el número de build actual como parte del incremento
                     def buildNumber = currentBuild.number
-
-                    // Actualizar el ARTIFACT_VERSION usando el número de build
                     env.ARTIFACT_VERSION = "${BASE_VERSION}.${buildNumber}"
                     echo "New artifact version: ${ARTIFACT_VERSION}"
                 }
@@ -104,7 +104,6 @@ pipeline {
                     clientIdVariable: 'AZURE_CLIENT_ID',
                     clientSecretVariable: 'AZURE_CLIENT_SECRET'
                 )]) {
-                    // Comando PowerShell para ejecutar el script
                     sh '''
                     az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
                     az account set --subscription $AZURE_SUBSCRIPTION_ID
@@ -124,7 +123,6 @@ pipeline {
     post {
         always {
             script {
-                // Verifica si hay cuentas activas de Azure antes de intentar desconectar
                 def result = sh(script: 'az account show', returnStatus: true)
                 if (result == 0) {
                     sh 'az logout'
