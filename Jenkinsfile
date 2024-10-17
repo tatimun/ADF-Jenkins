@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NEXUS_CREDENTIALS_ID = 'nexus-credentials'
-        NEXUS_URL = 'http://nexus:8081'
+        NEXUS_URL = 'http://localhost:8081'
         NEXUS_REPOSITORY = 'arm-templates'
         ARTIFACT_ID = 'ArmTemplates'
         FILE_NAME = 'armtemplates.zip'
