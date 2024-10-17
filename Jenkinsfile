@@ -78,6 +78,7 @@ pipeline {
                 }
             }
         }
+
         stage('Print Artifact Version') {
             steps {
                 script {
@@ -101,6 +102,17 @@ pipeline {
                     ${NEXUS_URL}/repository/${NEXUS_REPOSITORY}/${ARTIFACT_ID}/${ARTIFACT_VERSION}/${FILE_NAME}
                     """
                 }
+            }
+        }
+
+        stage('Run PowerShell Script') {
+            steps {
+                powershell '''
+                # Cambia a la ruta donde está tu script
+                Set-Location -Path "build/"
+                # Ejecuta tu script .ps1
+                .\\PrePostDeploymentScript.ps1 -armTemplate "ARMTemplateForFactory.json" -ResourceGroupName "TestRG" -DataFactoryName "tatidatatest" -predeployment $true -deleteDeployment $false
+                '''
             }
         }
     }
