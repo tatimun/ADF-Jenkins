@@ -26,7 +26,18 @@ pipeline {
 
         stage('Install NPM Packages') {
             steps {
-                sh 'npm install --prefix build'
+                // Cambia al directorio build y realiza npm install
+                dir('build') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Validate NPM Packages') {
+            steps {
+                dir('build') {
+                    sh 'npm audit' // Valida los paquetes de npm
+                }
             }
         }
 
@@ -41,7 +52,7 @@ pipeline {
 
                     // Generar el ARM template
                     sh '''
-                    npm run --prefix build build export \
+                    npm run build export \
                     /var/jenkins_home/workspace/Azure/DataFactory \
                     /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest \
                     ArmTemplate
@@ -125,4 +136,3 @@ pipeline {
         }
     }
 }
-
