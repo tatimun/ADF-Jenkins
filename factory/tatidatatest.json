@@ -1,0 +1,9 @@
+{
+	"name": "tatidatatest",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "cef2f238-8099-4347-8ee7-68fc68a7f41b",
+		"tenantId": "98e3f6df-bb28-4abc-bc24-971735d48166"
+	}
+}
