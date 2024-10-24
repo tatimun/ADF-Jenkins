@@ -90,11 +90,6 @@ pipeline {
                 }
             }
         }
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> a7a76ba2fcd12a712bf32575686618012cc4b029
         stage('Print Artifact Version') {
             steps {
                 script {
@@ -105,32 +100,6 @@ pipeline {
             }
         }
 
-<<<<<<< HEAD
-=======
-        stage('Upload to Nexus') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-credentials',
-                    passwordVariable: 'NEXUS_PASSWORD',
-                    usernameVariable: 'NEXUS_USERNAME')]) {
-
-                    sh """
-                    curl -v -u \$NEXUS_USERNAME:\$NEXUS_PASSWORD \
-                    --upload-file build/ArmTemplate/${FILE_NAME} \
-                    ${NEXUS_URL}/repository/${NEXUS_REPOSITORY}/${ARTIFACT_ID}/${ARTIFACT_VERSION}/${FILE_NAME}
-                    """
-                }
-            }
-        }
-
-        stage('Run PowerShell Script') {
-            steps {
-                powershell '''
-                .\\build\\PrePostDeploymentScript.ps1 -armTemplate "ARMTemplateForFactory.json" -ResourceGroupName "TestRG" -DataFactoryName "testtutorialtati" -predeployment $true -deleteDeployment $false
-                '''
-            }
-        }
->>>>>>> a7a76ba2fcd12a712bf32575686618012cc4b029
     }
 
 }
