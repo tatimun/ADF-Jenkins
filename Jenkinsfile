@@ -55,6 +55,12 @@ pipeline {
                 '''
             }
         }
+        stage('Show Workspace') {
+            steps {
+            bat 'echo %WORKSPACE%'
+            }
+        }
+
 
         stage('Generate ARM Template') {
             steps {
@@ -67,35 +73,13 @@ pipeline {
 
                     bat '''
                     cd build
-                    npm run build export ^
-                    %WORKSPACE%\\build ^
-                    /subscriptions/%AZURE_SUBSCRIPTION_ID%/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest ^
-                    ArmTemplate
+                    npm run build export %WORKSPACE%\\build /subscriptions/%AZURE_SUBSCRIPTION_ID%/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest ArmTemplate
                     '''
 
                     bat '''
                     cd ArmTemplate
                     "C:\\Program Files\\7-Zip\\7z.exe" a -tzip ${FILE_NAME} .
                     '''
-                }
-            }
-        }
-
-        stage('Increment Version') {
-            steps {
-                script {
-                    def buildNumber = currentBuild.number
-                    env.ARTIFACT_VERSION = "${BASE_VERSION}.${buildNumber}"
-                    echo "New artifact version: ${ARTIFACT_VERSION}"
-                }
-            }
-        }
-        stage('Print Artifact Version') {
-            steps {
-                script {
-                    echo "----------------------------------------------------"
-                    echo "The current artifact version is: ${ARTIFACT_VERSION}"
-                    echo "----------------------------------------------------"
                 }
             }
         }
