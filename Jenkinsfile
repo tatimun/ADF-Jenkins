@@ -24,8 +24,7 @@ pipeline {
                     branches: [[name: '*/main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/tatimun/ADF-Jenkins.git',
-                        credentialsId: 'github-credentials',
-                        relativeTargetDir: 'build'
+                        credentialsId: 'github-credentials'
                     ]]
                 ])
             }
@@ -55,12 +54,6 @@ pipeline {
                 '''
             }
         }
-        stage('Show Workspace') {
-            steps {
-            bat 'echo %WORKSPACE%'
-            }
-        }
-
 
         stage('Generate ARM Template') {
             steps {
@@ -73,18 +66,15 @@ pipeline {
 
                     bat '''
                     cd build
-                    npm run build export %WORKSPACE%\\build /subscriptions/%AZURE_SUBSCRIPTION_ID%/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest ArmTemplate
+                    node --trace-uncaught %WORKSPACE%\\build\\downloads\\main.js export "%WORKSPACE%" "/subscriptions/%AZURE_SUBSCRIPTION_ID%/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest" ArmTemplate
                     '''
 
                     bat '''
-                    cd ArmTemplate
-                    "C:\\Program Files\\7-Zip\\7z.exe" a -tzip ${FILE_NAME} .
+                    cd build\\ArmTemplate
+                    "C:\\Program Files\\PeaZip\\peazip.exe" -add2zip %WORKSPACE%\\armtemplates.zip .
                     '''
                 }
             }
         }
-
     }
-
 }
-
