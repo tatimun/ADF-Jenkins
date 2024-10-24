@@ -1,3 +1,5 @@
+//  Jenkinsfile for windows
+
 pipeline {
     agent any
 
