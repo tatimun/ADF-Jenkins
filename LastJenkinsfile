@@ -72,48 +72,60 @@ pipeline {
 
                     bat '''
                     cd build\\ArmTemplate
-                    "C:\\Program Files\\PeaZip\\peazip.exe" -add2zip %WORKSPACE%\\armtemplates.zip .
+                    "C:\\Program Files\\PeaZip\\peazip.exe" -add2zip %WORKSPACE%\\build\\armtemplates.zip .
                     '''
                 }
             }
         }
-// ---------------------------------------------------------------------------------------------------------- ///
 
-stage('Increment Version') {
-    steps {
-        script {
-            def buildNumber = currentBuild.number
-            env.ARTIFACT_VERSION = "${BASE_VERSION}.${buildNumber}"
-            bat "echo New artifact version: ${ARTIFACT_VERSION}"
+        stage('Verify ZIP Creation') {
+            steps {
+                bat 'dir %WORKSPACE%\\build'
+            }
         }
-    }
-}
 
-stage('Print Artifact Version') {
-    steps {
-        bat '''
-        echo ----------------------------------------------------
-        echo The current artifact version is: %ARTIFACT_VERSION%
-        echo ----------------------------------------------------
-        '''
-    }
-}
+        stage('Increment Version') {
+            steps {
+                script {
+                    def buildNumber = currentBuild.number
+                    env.ARTIFACT_VERSION = "${BASE_VERSION}.${buildNumber}"
+                    bat "echo New artifact version: ${ARTIFACT_VERSION}"
+                }
+            }
+        }
+
+        stage('Print Artifact Version') {
+            steps {
+                bat '''
+                echo ----------------------------------------------------
+                echo The current artifact version is: %ARTIFACT_VERSION%
+                echo ----------------------------------------------------
+                '''
+            }
+        }
 
         stage('Upload to Nexus') {
             steps {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: 'localhost:8081',
+                    nexusUrl: "${NEXUS_URL}",
                     groupId: "${GROUP_ID}",
-                    version: "${BASE_VERSION}",
-                    repository: "ArmTemplates",
+                    version: "${ARTIFACT_VERSION}",
+                    repository: "${NEXUS_REPOSITORY}",
                     credentialsId: "${NEXUS_CREDENTIALS_ID}",
                     artifacts: [
-                        [artifactId: "${ARTIFACT_ID}", classifier: '', file: "${FILE_NAME}", type: 'zip']
+                        [artifactId: "${ARTIFACT_ID}", classifier: '', file: "%WORKSPACE%\\build\\armtemplates.zip", type: 'zip']
                     ]
                 )
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up...'
+            cleanWs()
         }
     }
 }
