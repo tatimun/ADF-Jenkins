@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NEXUS_CREDENTIALS_ID = 'nexus-credentials'
-        NEXUS_URL = 'http://nexus:8081'  // Cambiado de localhost a nexus
+        NEXUS_URL = 'http://nexus:8081'
         NEXUS_REPOSITORY = 'arm-templates'
         ARTIFACT_ID = 'ArmTemplates'
         FILE_NAME = 'armtemplates.zip'
@@ -11,40 +11,48 @@ pipeline {
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: 'main']],
+                    branches: [[name: '*/main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/tatimun/ADF-Jenkins.git',
-                        credentialsId: 'github-credentials'
+                        credentialsId: 'github-credentials',
+                        relativeTargetDir: 'build'
                     ]]
                 ])
             }
         }
 
-        stage('Install NPM Packages') {
+        stage('Debug: Print Working Directory and List Build Folder') {
             steps {
-                sh 'npm install --prefix build'
+                bat 'echo Current Directory: %cd%'
+                bat 'dir build'
             }
         }
 
-        stage('Debug: List Files') {
+        stage('Install NPM Packages') {
             steps {
-                sh 'ls -R /var/jenkins_home/workspace/Azure/AzureDataFactory'
+                bat '''
+                cd build
+                npm install
+                '''
             }
         }
 
         stage('Validate ARM Template') {
             steps {
-                script {
-                    sh '''
-                    node build/node_modules/@microsoft/azure-data-factory-utilities/lib/index validate \
-                    /var/jenkins_home/workspace/Azure/AzureDataFactory \
-                    /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
-                    '''
-                }
+                bat '''
+                cd build
+                node node_modules\\@microsoft\\azure-data-factory-utilities\\lib\\index validate %WORKSPACE%\\build /subscriptions/%AZURE_SUBSCRIPTION_ID%/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest
+                '''
             }
         }
 
@@ -57,14 +65,18 @@ pipeline {
                     clientIdVariable: 'AZURE_CLIENT_ID',
                     clientSecretVariable: 'AZURE_CLIENT_SECRET')]) {
 
-                    sh '''
-                    npm run --prefix build build export \
-                    /var/jenkins_home/workspace/Azure/AzureDataFactory \
-                    /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest \
+                    bat '''
+                    cd build
+                    npm run build export ^
+                    %WORKSPACE%\\build ^
+                    /subscriptions/%AZURE_SUBSCRIPTION_ID%/resourceGroups/testRG/providers/Microsoft.DataFactory/factories/tatidatatest ^
                     ArmTemplate
                     '''
 
-                    sh 'cd build/ArmTemplate && zip -r ${FILE_NAME} .'
+                    bat '''
+                    cd ArmTemplate
+                    "C:\\Program Files\\7-Zip\\7z.exe" a -tzip ${FILE_NAME} .
+                    '''
                 }
             }
         }
@@ -78,6 +90,7 @@ pipeline {
                 }
             }
         }
+
         stage('Print Artifact Version') {
             steps {
                 script {
@@ -88,36 +101,7 @@ pipeline {
             }
         }
 
-        stage('Upload to Nexus') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-credentials',
-                    passwordVariable: 'NEXUS_PASSWORD',
-                    usernameVariable: 'NEXUS_USERNAME')]) {
-
-                    sh """
-                    curl -v -u \$NEXUS_USERNAME:\$NEXUS_PASSWORD \
-                    --upload-file build/ArmTemplate/${FILE_NAME} \
-                    ${NEXUS_URL}/repository/${NEXUS_REPOSITORY}/${ARTIFACT_ID}/${ARTIFACT_VERSION}/${FILE_NAME}
-                    """
-                }
-            }
-        }
     }
 
-    post {
-        always {
-            script {
-                def result = sh(script: 'az account show', returnStatus: true)
-                if (result == 0) {
-                    sh 'az logout'
-                } else {
-                    echo 'No Azure accounts were logged in.'
-                }
-            }
-        }
-        failure {
-            echo 'Pipeline failed.'
-        }
-    }
 }
+
